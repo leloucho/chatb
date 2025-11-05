@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; background: #667eea; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial; }
+        .icon { font-size: 80px; color: white; }
+    </style>
+</head>
+<body>
+    <div class="icon">🔥</div>
+</body>
+</html>

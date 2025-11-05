@@ -1,0 +1,5 @@
+// Archivo de prueba para testing del formulario
+material = acero
+espesor = 3mm
+dimensiones = 100x50mm
+cantidad = 5

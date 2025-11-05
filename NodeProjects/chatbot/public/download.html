@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descarga - corte1.dwg | ESIAD Proyectos SAC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .file-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+        }
+
+        .file-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .file-description {
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .instructions {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .instructions ol {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .contact {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📐 ESIAD Proyectos SAC</h1>
+            <p>Descarga de Archivo Plantilla</p>
+        </div>
+
+        <div class="file-info">
+            <div class="file-icon">📄</div>
+            <div class="file-name">corte1.dwg</div>
+            <div class="file-description">Archivo plantilla para corte láser en formato AutoCAD</div>
+            
+            <a href="/files/corte1.dwg" class="download-btn" download="corte1.dwg">
+                ⬇️ Descargar Archivo
+            </a>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instrucciones:</h3>
+            <ol>
+                <li><strong>Descarga</strong> el archivo haciendo clic en el botón de arriba</li>
+                <li><strong>Abre</strong> el archivo en AutoCAD, DraftSight o software similar</li>
+                <li><strong>Edita</strong> el diseño según tus necesidades específicas</li>
+                <li><strong>Guarda</strong> el archivo modificado</li>
+                <li><strong>Envía</strong> el archivo editado al chatbot de WhatsApp</li>
+                <li><strong>Incluye</strong> las especificaciones: material, espesor, dimensiones, cantidad</li>
+            </ol>
+        </div>
+
+        <div class="contact">
+            <p><strong>¿Necesitas ayuda?</strong></p>
+            <p>Contacta a nuestro chatbot de WhatsApp para asistencia inmediata</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-descargar después de 3 segundos si el usuario no hace clic
+        setTimeout(() => {
+            if (confirm('¿Deseas descargar el archivo corte1.dwg automáticamente?')) {
+                window.location.href = '/files/corte1.dwg';
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
