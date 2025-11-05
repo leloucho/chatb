@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido de Corte Láser - ESIAD</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: 2px dashed #e0e0e0;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: #4ECDC4;
+            background-color: #f8fffe;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .template-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            padding: 15px 25px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .template-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.3);
+        }
+
+        .file-upload-area {
+            border: 3px dashed #4ECDC4;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            background: #f0fffe;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            background: #e6fffd;
+            border-color: #2bb5a8;
+        }
+
+        .file-upload-area.dragover {
+            background: #d4f8f5;
+            border-color: #1fa396;
+            transform: scale(1.02);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            color: #4ECDC4;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4ECDC4;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(78, 205, 196, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .file-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .file-item span {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .remove-file {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4ECDC4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            display: none;
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .error-message {
+            display: none;
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Pedido de Corte Láser</h1>
+            <p>ESIAD Proyectos SAC</p>
+        </div>
+
+        <div class="content">
+            <!-- Descarga de Plantilla -->
+            <div class="section">
+                <h3>📎 Plantilla DWG (Opcional)</h3>
+                <a href="/files/corte1.dwg" class="template-download" download>
+                    📥 Descargar Plantilla Base
+                </a>
+                <p style="color: #666; margin-top: 10px;">
+                    Descarga nuestra plantilla, edítala según tus necesidades y súbela aquí.
+                </p>
+            </div>
+
+            <form id="uploadForm">
+                <!-- Upload de Archivos -->
+                <div class="section">
+                    <h3>📁 Subir Archivos de Diseño</h3>
+                    <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">☁️</div>
+                        <h4>Arrastra tus archivos aquí o haz clic para seleccionar</h4>
+                        <p>Formatos soportados: DWG, DXF, PDF • Máximo 50MB por archivo</p>
+                    </div>
+                    <input type="file" id="fileInput" name="files" class="file-input" multiple accept=".dwg,.dxf,.pdf">
+                    <div id="fileList" class="file-list"></div>
+                </div>
+
+                <!-- Especificaciones -->
+                <div class="section">
+                    <h3>⚙️ Especificaciones del Corte</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="material">Material *</label>
+                            <select id="material" name="material" required>
+                                <option value="">Selecciona el material</option>
+                                <option value="acero">Acero al Carbono</option>
+                                <option value="acero_inoxidable">Acero Inoxidable</option>
+                                <option value="aluminio">Aluminio</option>
+                                <option value="cobre">Cobre</option>
+                                <option value="bronce">Bronce</option>
+                                <option value="madera">Madera</option>
+                                <option value="acrilico">Acrílico</option>
+                                <option value="otro">Otro (especificar)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="espesor">Espesor (mm) *</label>
+                            <input type="number" id="espesor" name="espesor" step="0.1" min="0.1" max="50" placeholder="ej: 3.5" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dimensiones">Dimensiones de la Lámina *</label>
+                            <input type="text" id="dimensiones" name="dimensiones" placeholder="ej: 100x200mm o 500x300cm" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cantidad">Cantidad de Piezas *</label>
+                            <input type="number" id="cantidad" name="cantidad" min="1" placeholder="ej: 5" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="comentarios">Comentarios Adicionales</label>
+                        <textarea id="comentarios" name="comentarios" rows="4" placeholder="Instrucciones especiales, acabado requerido, urgencia, etc."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="submit-btn">
+                    🚀 Enviar Pedido de Corte Láser
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <h3>Subiendo archivos y procesando pedido...</h3>
+                <p>Por favor espera, esto puede tomar unos momentos.</p>
+            </div>
+
+            <div class="success-message" id="successMessage">
+                <h3>✅ ¡Pedido Enviado Exitosamente!</h3>
+                <p>Tu solicitud ha sido recibida. Te notificaremos por WhatsApp cuando un especialista revise tu diseño.</p>
+            </div>
+
+            <div class="error-message" id="errorMessage">
+                <h3>❌ Error al Enviar</h3>
+                <p id="errorText">Hubo un problema al procesar tu pedido. Por favor intenta nuevamente.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+        const maxFileSize = 50 * 1024 * 1024; // 50MB
+
+        // Obtener token de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let token = urlParams.get('token');
+        
+        // Limpiar el token de espacios y decodificar caracteres especiales
+        if (token) {
+            token = decodeURIComponent(token).trim();
+            console.log('Token procesado:', token);
+        }
+
+        if (!token) {
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Token inválido. Por favor solicita un nuevo enlace desde WhatsApp.';
+            document.getElementById('uploadForm').style.display = 'none';
+        }
+
+        // Configurar drag & drop
+        const fileUploadArea = document.querySelector('.file-upload-area');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (validateFile(file)) {
+                    selectedFiles.push(file);
+                    addFileToList(file);
+                }
+            });
+            updateSubmitButton();
+        }
+
+        function validateFile(file) {
+            const allowedTypes = ['.dwg', '.dxf', '.pdf'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!allowedTypes.includes(fileExtension)) {
+                alert(`Archivo ${file.name} no es compatible. Solo se permiten archivos DWG, DXF y PDF.`);
+                return false;
+            }
+
+            if (file.size > maxFileSize) {
+                alert(`Archivo ${file.name} es muy grande. Máximo 50MB por archivo.`);
+                return false;
+            }
+
+            return true;
+        }
+
+        function addFileToList(file) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span>📄 ${file.name} (${formatFileSize(file.size)})</span>
+                <button type="button" class="remove-file" onclick="removeFile('${file.name}')">Eliminar</button>
+            `;
+            fileList.appendChild(fileItem);
+        }
+
+        function removeFile(fileName) {
+            selectedFiles = selectedFiles.filter(file => file.name !== fileName);
+            const fileItems = fileList.querySelectorAll('.file-item');
+            fileItems.forEach(item => {
+                if (item.textContent.includes(fileName)) {
+                    item.remove();
+                }
+            });
+            updateSubmitButton();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = selectedFiles.length === 0;
+        }
+
+        // Función para mostrar errores
+        function showError(message) {
+            // Remover error anterior si existe
+            const existingError = document.querySelector('.error-alert');
+            if (existingError) {
+                existingError.remove();
+            }
+
+            // Crear nuevo elemento de error
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-alert';
+            errorDiv.innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f5c6cb;">
+                    ⚠️ ${message}
+                </div>
+            `;
+
+            // Insertar antes del formulario
+            const form = document.getElementById('uploadForm');
+            form.parentNode.insertBefore(errorDiv, form);
+
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 5000);
+
+            // Scroll al error
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Envío del formulario
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validaciones completas
+            if (selectedFiles.length === 0) {
+                showError('Por favor selecciona al menos un archivo.');
+                return;
+            }
+
+            // Validar campos requeridos
+            const material = document.getElementById('material').value.trim();
+            const espesor = document.getElementById('espesor').value.trim();
+            const dimensiones = document.getElementById('dimensiones').value.trim();
+            const cantidad = document.getElementById('cantidad').value.trim();
+
+            if (!material) {
+                showError('Por favor especifica el material.');
+                document.getElementById('material').focus();
+                return;
+            }
+
+            if (!espesor) {
+                showError('Por favor especifica el espesor.');
+                document.getElementById('espesor').focus();
+                return;
+            }
+
+            if (!dimensiones) {
+                showError('Por favor especifica las dimensiones.');
+                document.getElementById('dimensiones').focus();
+                return;
+            }
+
+            if (!cantidad || isNaN(cantidad) || parseInt(cantidad) <= 0) {
+                showError('Por favor especifica una cantidad válida.');
+                document.getElementById('cantidad').focus();
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('token', token);
+            
+            // Añadir archivos
+            selectedFiles.forEach(file => {
+                formData.append('files', file);
+            });
+
+            // Añadir especificaciones
+            const specifications = {
+                material: document.getElementById('material').value,
+                espesor: document.getElementById('espesor').value + 'mm',
+                dimensiones: document.getElementById('dimensiones').value,
+                cantidad: parseInt(document.getElementById('cantidad').value),
+                comentarios: document.getElementById('comentarios').value
+            };
+
+            formData.append('specifications', JSON.stringify(specifications));
+
+            // Mostrar loading
+            document.getElementById('uploadForm').style.display = 'none';
+            document.getElementById('loading').classList.add('show');
+
+            try {
+                // Detectar URL base automáticamente
+                const baseUrl = window.location.origin;
+                const response = await fetch(`${baseUrl}/api/upload-files`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('loading').classList.remove('show');
+                    document.getElementById('successMessage').style.display = 'block';
+                } else {
+                    throw new Error(result.error || 'Error al enviar el pedido');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').classList.remove('show');
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('errorText').textContent = error.message;
+                document.getElementById('uploadForm').style.display = 'block';
+            }
+        });
+
+        // Validación inicial
+        updateSubmitButton();
+    </script>
+</body>
+</html>

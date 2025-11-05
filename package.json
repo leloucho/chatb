@@ -1,0 +1,33 @@
+{
+  "name": "esiad-whatsapp-chatbot",
+  "version": "1.0.0",
+  "description": "Chatbot de WhatsApp para ESIAD Proyectos SAC - Servicios de corte láser, ploteo e impresión 3D",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "init-db": "node src/database/init.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "chatbot",
+    "twilio",
+    "esiad"
+  ],
+  "author": "ESIAD Proyectos SAC",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "form-data": "^4.0.4",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.16.3",
+    "sqlite3": "^5.1.6",
+    "twilio": "^4.19.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

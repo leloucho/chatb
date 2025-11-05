@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Pedidos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border-radius: 10px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ee5a24;
+        }
+        .order-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .order-id {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .order-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            background: #ffeaa7;
+            color: #d63031;
+        }
+        .order-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .detail-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .detail-value {
+            color: #333;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-approve {
+            background: #00b894;
+            color: white;
+        }
+        .btn-reject {
+            background: #d63031;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.1rem;
+            color: #666;
+        }
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #ee5a24;
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Panel de Administración</h1>
+            <p>Sistema de Gestión de Pedidos - Corte Láser</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalOrders">0</div>
+                <div class="stat-label">Total Pedidos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pendingOrders">0</div>
+                <div class="stat-label">Pendientes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="approvedOrders">0</div>
+                <div class="stat-label">Aprobados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="rejectedOrders">0</div>
+                <div class="stat-label">Rechazados</div>
+            </div>
+        </div>
+
+        <div id="ordersContainer">
+            <div class="loading">🔄 Cargando pedidos...</div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="loadOrders()">🔄</button>
+
+    <script>
+        let orders = [];
+
+        async function loadOrders() {
+            try {
+                console.log('🔄 Cargando pedidos...');
+                
+                const response = await fetch('/api/admin/orders');
+                const data = await response.json();
+                
+                console.log('📋 Datos recibidos:', data);
+                
+                if (data.success && data.orders) {
+                    orders = data.orders;
+                    console.log('📦 Pedidos cargados:', orders.length);
+                    
+                    updateStats();
+                    renderOrders();
+                } else {
+                    throw new Error('Formato de respuesta inválido');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error cargando pedidos:', error);
+                document.getElementById('ordersContainer').innerHTML = 
+                    '<div class="loading">❌ Error al cargar pedidos. Verifique la consola.</div>';
+            }
+        }
+
+        function updateStats() {
+            const total = orders.length;
+            const pending = orders.filter(o => !o.worker_review_status || o.worker_review_status === 'pending').length;
+            const approved = orders.filter(o => o.worker_review_status === 'approved').length;
+            const rejected = orders.filter(o => o.worker_review_status === 'rejected').length;
+
+            document.getElementById('totalOrders').textContent = total;
+            document.getElementById('pendingOrders').textContent = pending;
+            document.getElementById('approvedOrders').textContent = approved;
+            document.getElementById('rejectedOrders').textContent = rejected;
+        }
+
+        function renderOrders() {
+            console.log('🎨 Renderizando', orders.length, 'pedidos');
+            
+            const container = document.getElementById('ordersContainer');
+            
+            if (orders.length === 0) {
+                container.innerHTML = '<div class="loading">📭 No hay pedidos en el sistema</div>';
+                return;
+            }
+
+            const ordersHTML = orders.map(order => {
+                let specs = {};
+                try {
+                    // Si specifications es un string, parsearlo como JSON
+                    if (typeof order.specifications === 'string') {
+                        // Si contiene caracteres que indican que es texto plano con formato key: value
+                        if (order.specifications.includes(':')) {
+                            specs = {};
+                            order.specifications.split(',').forEach(part => {
+                                const [key, value] = part.split(':').map(s => s.trim());
+                                if (key && value) specs[key] = value;
+                            });
+                        } else {
+                            specs = JSON.parse(order.specifications);
+                        }
+                    } else {
+                        specs = order.specifications || {};
+                    }
+                } catch (e) {
+                    specs = { info: order.specifications || 'No especificado' };
+                }
+
+                const status = order.worker_review_status || 'pending';
+                const statusText = status === 'approved' ? '✅ Aprobado' : 
+                                 status === 'rejected' ? '❌ Rechazado' : 
+                                 '⏳ Pendiente';
+
+                let filesHtml = '';
+                if (order.uploaded_files) {
+                    try {
+                        const files = JSON.parse(order.uploaded_files);
+                        filesHtml = files.map(file => `<span style="background: #e3f2fd; padding: 5px 10px; margin: 2px; border-radius: 5px; display: inline-block;">📄 ${file}</span>`).join(' ');
+                    } catch (e) {
+                        filesHtml = `<span style="background: #e3f2fd; padding: 5px 10px; border-radius: 5px;">📄 ${order.uploaded_files}</span>`;
+                    }
+                }
+
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div class="order-id">📦 Pedido #${order.id}</div>
+                            <div class="order-status">${statusText}</div>
+                        </div>
+                        
+                        <div class="order-details">
+                            <div class="detail-item">
+                                <div class="detail-label">📱 Cliente</div>
+                                <div class="detail-value">${order.phone_number}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">🛠️ Servicio</div>
+                                <div class="detail-value">${order.service_type}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">📅 Fecha</div>
+                                <div class="detail-value">${new Date(order.created_at).toLocaleString('es-ES')}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">📊 Estado</div>
+                                <div class="detail-value">${order.status}</div>
+                            </div>
+                        </div>
+
+                        ${Object.keys(specs).length > 0 ? `
+                            <div class="detail-item">
+                                <div class="detail-label">📝 Especificaciones</div>
+                                <div class="detail-value">
+                                    ${Object.entries(specs).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join('<br>')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${filesHtml ? `
+                            <div class="detail-item">
+                                <div class="detail-label">📁 Archivos</div>
+                                <div class="detail-value">${filesHtml}</div>
+                            </div>
+                        ` : ''}
+
+                        ${status === 'pending' ? `
+                            <div class="actions">
+                                <button class="btn btn-approve" onclick="reviewOrder(${order.id}, 'approved')">
+                                    ✅ Aprobar
+                                </button>
+                                <button class="btn btn-reject" onclick="reviewOrder(${order.id}, 'rejected')">
+                                    ❌ Rechazar
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = ordersHTML;
+        }
+
+        async function reviewOrder(orderId, status) {
+            try {
+                const comment = status === 'rejected' ? 
+                    prompt('¿Por qué se rechaza el pedido?') : 
+                    'Pedido aprobado para producción';
+
+                if (status === 'rejected' && !comment) return;
+
+                const response = await fetch(`/api/orders/${orderId}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        reviewStatus: status,
+                        comment: comment
+                    })
+                });
+
+                if (response.ok) {
+                    alert(`✅ Pedido ${status === 'approved' ? 'aprobado' : 'rechazado'} exitosamente`);
+                    loadOrders(); // Recargar
+                } else {
+                    alert('❌ Error al procesar la revisión');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al procesar la revisión');
+            }
+        }
+
+        // Cargar pedidos al inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrders();
+            // Actualizar cada 30 segundos
+            setInterval(loadOrders, 30000);
+        });
+    </script>
+</body>
+</html>

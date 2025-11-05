@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESIAD - Panel de Pedidos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .orders-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .order-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .order-id {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .order-status {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .status-solicitado {
+            background: #ffeaa7;
+            color: #2d3436;
+        }
+
+        .status-aceptado {
+            background: #55a3ff;
+            color: white;
+        }
+
+        .status-iniciado {
+            background: #fd79a8;
+            color: white;
+        }
+
+        .status-completado {
+            background: #00b894;
+            color: white;
+        }
+
+        .status-rechazado {
+            background: #e17055;
+            color: white;
+        }
+
+        .order-details {
+            margin-bottom: 20px;
+        }
+
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #2c3e50;
+            width: 120px;
+        }
+
+        .detail-value {
+            color: #34495e;
+            flex: 1;
+        }
+
+        .action-section {
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-accept {
+            background: #00b894;
+            color: white;
+        }
+
+        .btn-reject {
+            background: #e17055;
+            color: white;
+        }
+
+        .btn-start {
+            background: #fd79a8;
+            color: white;
+        }
+
+        .btn-complete {
+            background: #0984e3;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 60px;
+            color: #7f8c8d;
+            font-size: 1.3em;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.2em;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <button class="refresh-btn" onclick="loadOrders()" title="Actualizar">🔄</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🏭 ESIAD Proyectos SAC</h1>
+            <p>Panel de Gestión de Pedidos - WhatsApp Chatbot</p>
+        </div>
+
+        <div id="ordersContainer">
+            <div class="loading">
+                <p>⏳ Cargando pedidos...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let orders = [];
+
+        // Cargar pedidos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrders();
+            // Actualizar cada 30 segundos
+            setInterval(loadOrders, 30000);
+        });
+
+        async function loadOrders() {
+            try {
+                console.log('🔄 Cargando pedidos...');
+                const response = await fetch('/api/admin/orders');
+                const data = await response.json();
+                console.log('📋 Datos recibidos:', data);
+                
+                // Extraer el array de orders del objeto respuesta
+                orders = data.orders || [];
+                console.log('📦 Pedidos extraídos:', orders.length);
+                
+                renderOrders();
+            } catch (error) {
+                console.error('❌ Error cargando pedidos:', error);
+                document.getElementById('ordersContainer').innerHTML = 
+                    '<div class="loading"><p>❌ Error cargando pedidos</p></div>';
+            }
+        }
+
+        function renderOrders() {
+            console.log('🎨 Renderizando pedidos...', orders.length);
+            const container = document.getElementById('ordersContainer');
+            
+            if (!orders || orders.length === 0) {
+                console.log('❌ No hay pedidos para mostrar');
+                container.innerHTML = `
+                    <div class="no-orders">
+                        <p>📋 No hay pedidos pendientes</p>
+                        <p style="font-size: 0.9em; margin-top: 10px;">Los nuevos pedidos aparecerán aquí automáticamente</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const ordersHTML = orders.map(order => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <div class="order-id">Pedido #${order.id}</div>
+                        <div class="order-status status-${order.status}">${order.status}</div>
+                    </div>
+                    
+                    <div class="order-details">
+                        <div class="detail-row">
+                            <div class="detail-label">📱 Cliente:</div>
+                            <div class="detail-value">${order.phone_number}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">🔧 Servicio:</div>
+                            <div class="detail-value">${getServiceName(order.service_type)}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">📝 Especificaciones:</div>
+                            <div class="detail-value">${order.specifications || 'Sin especificaciones'}</div>
+                        </div>
+                        ${order.uploaded_files ? `
+                        <div class="detail-row">
+                            <div class="detail-label">📁 Archivos subidos:</div>
+                            <div class="detail-value">
+                                ${JSON.parse(order.uploaded_files).map(file => 
+                                    `<div style="margin: 2px 0;">
+                                        <a href="/uploads/${file.filename}" target="_blank" style="color: #667eea; text-decoration: none;">
+                                            📄 ${file.originalname} (${(file.size/1024/1024).toFixed(2)} MB)
+                                        </a>
+                                    </div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${order.web_form_url ? `
+                        <div class="detail-row">
+                            <div class="detail-label">🌐 Formulario Web:</div>
+                            <div class="detail-value">
+                                <a href="${order.web_form_url}" target="_blank" style="color: #667eea;">Ver formulario</a>
+                            </div>
+                        </div>
+                        ` : ''}
+                        <div class="detail-row">
+                            <div class="detail-label">📅 Fecha:</div>
+                            <div class="detail-value">${new Date(order.created_at).toLocaleString('es-PE')}</div>
+                        </div>
+                        ${order.worker_comment ? `
+                        <div class="detail-row">
+                            <div class="detail-label">💬 Comentario:</div>
+                            <div class="detail-value">${order.worker_comment}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="action-section">
+                        <div class="action-buttons">
+                            ${getActionButtons(order)}
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>💬 Comentario:</label>
+                            <textarea id="comment-${order.id}" placeholder="Escribe un comentario (opcional)"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>⏰ Tiempo estimado:</label>
+                            <input type="text" id="time-${order.id}" placeholder="Ej: 2-3 días, 4 horas">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="orders-grid">${ordersHTML}</div>`;
+        }
+
+        function getServiceName(serviceType) {
+            const names = {
+                'corte_laser': '✂️ Corte Láser',
+                'ploteo': '🖨️ Ploteo',
+                'impresion_3d': '🏗️ Impresión 3D',
+                'otros': '🔧 Otros Servicios'
+            };
+            return names[serviceType] || serviceType;
+        }
+
+        function getActionButtons(order) {
+            switch (order.status) {
+                case 'solicitado':
+                    return `
+                        <button class="btn btn-accept" onclick="updateOrder(${order.id}, 'aceptado')">✅ Aceptar</button>
+                        <button class="btn btn-reject" onclick="updateOrder(${order.id}, 'rechazado')">❌ Rechazar</button>
+                    `;
+                case 'aceptado':
+                    return `
+                        <button class="btn btn-start" onclick="updateOrder(${order.id}, 'iniciado')">🛠️ Iniciar Trabajo</button>
+                    `;
+                case 'iniciado':
+                    return `
+                        <button class="btn btn-complete" onclick="updateOrder(${order.id}, 'completado')">✅ Completar</button>
+                    `;
+                default:
+                    return '';
+            }
+        }
+
+        async function updateOrder(orderId, status) {
+            const comment = document.getElementById(`comment-${orderId}`).value;
+            const estimatedTime = document.getElementById(`time-${orderId}`).value;
+
+            try {
+                const response = await fetch(`/api/orders/${orderId}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status,
+                        comment,
+                        estimatedTime
+                    })
+                });
+
+                if (response.ok) {
+                    // Recargar pedidos
+                    await loadOrders();
+                    alert(`✅ Pedido #${orderId} actualizado correctamente`);
+                } else {
+                    alert('❌ Error actualizando el pedido');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error de conexión');
+            }
+        }
+    </script>
+</body>
+</html>
