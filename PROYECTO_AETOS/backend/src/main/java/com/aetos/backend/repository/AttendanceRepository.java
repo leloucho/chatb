@@ -1,0 +1,7 @@
+package com.aetos.backend.repository;
+
+import com.aetos.backend.model.Attendance;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+}
