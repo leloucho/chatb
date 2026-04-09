@@ -34,6 +34,7 @@ async function processUploadFiles(body, files) {
     // Crear pedido con archivos
     const order = await OrderService.createOrderWithFiles({
         phoneNumber: conversation.phone_number,
+        customerDni: conversation.customer_dni || null,
         serviceType: 'corte_laser',
         serviceName: 'Corte Láser',
         files: fileNames,

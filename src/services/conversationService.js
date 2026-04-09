@@ -57,6 +57,12 @@ class ConversationService {
                 paramIndex++;
             }
 
+            if (Object.prototype.hasOwnProperty.call(additionalData, 'customer_dni')) {
+                updates.push(`customer_dni = $${paramIndex}`);
+                params.push(additionalData.customer_dni);
+                paramIndex++;
+            }
+
             if (additionalData.details) {
                 updates.push(`details = $${paramIndex}`);
                 params.push(additionalData.details);

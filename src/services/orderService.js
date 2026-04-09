@@ -19,6 +19,7 @@ class OrderService {
             // Formato nuevo (objeto)
             const { 
                 phoneNumber, 
+                customerDni = null,
                 serviceType, 
                 serviceName,
                 specifications = '', 
@@ -28,8 +29,8 @@ class OrderService {
             } = orderData;
             
             const result = await client.query(
-                'INSERT INTO orders (phone_number, service_type, specifications, file_paths, customer_name, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                [phoneNumber, serviceType, specifications, filePaths, customerName, status]
+                'INSERT INTO orders (phone_number, customer_dni, service_type, specifications, file_paths, customer_name, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+                [phoneNumber, customerDni, serviceType, specifications, filePaths, customerName, status]
             );
             return { id: result.rows[0].id };
         } finally {
@@ -104,6 +105,7 @@ class OrderService {
         try {
             const { 
                 phoneNumber, 
+                customerDni = null,
                 serviceType = 'corte_laser',
                 serviceName = 'Corte Láser',
                 files = [], 
@@ -118,11 +120,12 @@ class OrderService {
 
             const result = await client.query(
                 `INSERT INTO orders 
-                (phone_number, service_type, specifications, status, uploaded_files, worker_review_status, created_at, updated_at) 
-                VALUES ($1, $2, $3, $4, $5, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
+                (phone_number, customer_dni, service_type, specifications, status, uploaded_files, worker_review_status, created_at, updated_at) 
+                VALUES ($1, $2, $3, $4, $5, $6, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) 
                 RETURNING id`,
                 [
                     phoneNumber, 
+                    customerDni,
                     serviceType, 
                     specsText, 
                     status, 

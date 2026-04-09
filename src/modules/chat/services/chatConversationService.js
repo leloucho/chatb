@@ -1,5 +1,6 @@
 const ConversationService = require('../../../services/conversationService');
 const OrderService = require('../../../services/orderService');
+const CustomerService = require('../../../services/customerService');
 const chatMessagingService = require('./chatMessagingService');
 
 class ChatConversationService {
@@ -86,6 +87,12 @@ class ChatConversationService {
                 case 'initial':
                     responseMessage = await this.handleInitialState(phoneNumber, messageBody);
                     break;
+                case 'awaiting_dni':
+                    responseMessage = await this.handleDniState(phoneNumber, messageBody);
+                    break;
+                case 'awaiting_dni_confirmation':
+                    responseMessage = await this.handleDniConfirmationState(phoneNumber, messageBody);
+                    break;
                 case 'service_selection':
                     responseMessage = await this.handleServiceSelection(phoneNumber, messageBody);
                     break;
@@ -126,11 +133,67 @@ class ChatConversationService {
     }
 
     async handleInitialState(phoneNumber, messageBody) {
-        await ConversationService.updateConversationState(phoneNumber, 'service_selection');
+        const conversation = await ConversationService.getOrCreateConversation(phoneNumber);
+        const possibleDni = (messageBody || '').replace(/\D/g, '');
 
+        if (conversation.customer_dni) {
+            await ConversationService.updateConversationState(phoneNumber, 'awaiting_dni_confirmation');
+            return `👋 ¡Hola de nuevo! Bienvenido a *ESIAD Proyectos SAC*.
+
+¿Deseas continuar con tu DNI registrado *${conversation.customer_dni}*?
+
+Responde:
+*1* Sí
+*2* No, ingresar otro DNI`;
+        }
+
+    if (/^\d{8}$/.test(possibleDni)) {
+        return this.handleDniState(phoneNumber, possibleDni);
+    }
+
+        await ConversationService.updateConversationState(phoneNumber, 'awaiting_dni');
         return `👋 ¡Hola! Bienvenido a *ESIAD Proyectos SAC*.
 
-Estoy aquí para ayudarte con tus pedidos.
+Antes de continuar, envíame tu *DNI (8 dígitos)* para registrar tu pedido.`;
+    }
+
+    async handleDniState(phoneNumber, messageBody) {
+        const dni = (messageBody || '').replace(/\D/g, '');
+
+        if (!/^\d{8}$/.test(dni)) {
+            return '❌ DNI inválido. Por favor, envía un DNI de 8 dígitos (solo números).';
+        }
+
+        await CustomerService.upsertByDni({ dni, phoneNumber });
+        await ConversationService.updateConversationState(phoneNumber, 'service_selection', null, {
+            customer_dni: dni
+        });
+
+        return `✅ DNI ${dni} registrado correctamente.
+
+${this.buildServiceMenuMessage()}`;
+    }
+
+    async handleDniConfirmationState(phoneNumber, messageBody) {
+        const normalized = (messageBody || '').toLowerCase().trim();
+
+        if (normalized === '1' || normalized === 'si' || normalized === 'sí') {
+            await ConversationService.updateConversationState(phoneNumber, 'service_selection');
+            return this.buildServiceMenuMessage();
+        }
+
+        if (normalized === '2' || normalized.includes('no')) {
+            await ConversationService.updateConversationState(phoneNumber, 'awaiting_dni', null, {
+                customer_dni: null
+            });
+            return 'Perfecto. Envíame el nuevo DNI (8 dígitos) para continuar.';
+        }
+
+        return 'Responde *1* para usar el DNI registrado o *2* para ingresar otro DNI.';
+    }
+
+    buildServiceMenuMessage() {
+        return `Estoy aquí para ayudarte con tus pedidos.
 
 Por favor, elige una de las siguientes opciones:
 
@@ -400,6 +463,7 @@ Responde:
 
             const order = await OrderService.createOrder({
                 phoneNumber,
+                customerDni: conversation.customer_dni || null,
                 serviceType: conversation.selected_service,
                 serviceName: service.name,
                 specifications: conversation.details || 'Sin especificaciones adicionales',
