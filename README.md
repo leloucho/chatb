@@ -195,4 +195,110 @@ STATUS_WEBHOOK_URL=https://1234-56-78-90-123.ngrok.io/webhook/status
 
 ---
 
+## Frontend Angular para Produccion (Guia Basica)
+
+Esta seccion te da el camino minimo para iniciar el frontend Angular consumiendo este backend en un entorno de produccion.
+
+### 1. Variables de entorno backend (obligatorias para frontend admin)
+
+Agrega o valida estas variables en tu `.env` de produccion:
+
+```env
+# Entorno
+NODE_ENV=production
+PORT=3000
+
+# Seguridad HTTP
+CORS_ORIGIN=https://tu-frontend.com
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=300
+
+# Auth JWT para panel/API admin
+AUTH_ENABLED=true
+JWT_SECRET=CAMBIA_ESTE_SECRETO_LARGO_Y_ALEATORIO
+JWT_EXPIRES_IN=8h
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=CAMBIA_ESTA_PASSWORD
+
+# Base URL para WhatsApp/Webhook
+WEBHOOK_URL=https://tu-backend.com/webhook/whatsapp
+```
+
+Notas:
+- Si `AUTH_ENABLED=true`, los endpoints de admin y gestion de pedidos requieren token Bearer.
+- `CORS_ORIGIN` debe apuntar al dominio real de Angular (o lista separada por comas).
+
+### 2. Endpoints clave para Angular
+
+- Login admin: `POST /api/auth/login`
+- OpenAPI JSON: `GET /api/openapi.json`
+- Swagger UI: `GET /api/docs`
+- Pedidos admin: `GET /api/admin/orders`
+- Pendientes: `GET /api/orders/pending`
+- Revisar pedido: `POST /api/orders/:id/review`
+- Actualizar pedido: `POST /api/orders/:id/update`
+
+### 3. Configuracion inicial en Angular
+
+En `src/environments/environment.ts` y `src/environments/environment.prod.ts` define:
+
+```ts
+export const environment = {
+    production: true,
+    apiBaseUrl: 'https://tu-backend.com'
+};
+```
+
+Implementa:
+- `AuthService` para login contra `/api/auth/login`.
+- `HttpInterceptor` que agregue `Authorization: Bearer <token>` en rutas protegidas.
+- Guard de rutas para panel admin.
+
+### 4. Flujo minimo recomendado
+
+1. Login en Angular con usuario/password admin.
+2. Guardar token JWT de forma segura (memoria o storage segun tu politica).
+3. Consumir endpoints de pedidos/admin con interceptor.
+4. Manejar errores usando el contrato JSON estandar del backend:
+
+```json
+{
+    "success": false,
+    "error": {
+        "code": "ERROR_CODE",
+        "message": "Mensaje",
+        "details": null
+    },
+    "requestId": "...",
+    "timestamp": "..."
+}
+```
+
+### 5. Build y despliegue Angular (basico)
+
+```bash
+ng build --configuration production
+```
+
+Publica `dist/` en tu servidor web (Nginx/Apache/CDN) y define proxy hacia backend para `/api`.
+
+Ejemplo conceptual de reverse proxy:
+- Frontend: `https://tu-frontend.com`
+- Backend API: `https://tu-backend.com`
+
+### 6. Verificaciones antes de conectar frontend
+
+Ejecuta en backend:
+
+```bash
+npm run lint
+npm run smoke
+npm test
+```
+
+Y confirma:
+- `/api/docs` responde correctamente.
+- login admin devuelve token.
+- endpoints admin responden con Bearer valido.
+
 **© 2024 ESIAD Proyectos SAC** - Todos los derechos reservados.
