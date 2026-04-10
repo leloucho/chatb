@@ -40,6 +40,31 @@ class ChatConversationService {
         return `${phoneNumber.replace('+', '')}_${serviceType}_${Date.now()}`;
     }
 
+    getTokenTtlMinutes() {
+        const ttl = Number(process.env.WEB_TOKEN_TTL_MINUTES || 120);
+        if (!Number.isFinite(ttl) || ttl < 5) {
+            return 120;
+        }
+        return ttl;
+    }
+
+    buildTokenExpiryDate() {
+        return new Date(Date.now() + this.getTokenTtlMinutes() * 60 * 1000);
+    }
+
+    isTokenExpired(expiresAt) {
+        if (!expiresAt) {
+            return false;
+        }
+
+        const parsed = new Date(expiresAt);
+        if (!Number.isFinite(parsed.getTime())) {
+            return false;
+        }
+
+        return parsed.getTime() < Date.now();
+    }
+
     sendWhatsAppMessage(to, message) {
         return chatMessagingService.sendWhatsAppMessage(to, message);
     }
@@ -92,6 +117,12 @@ class ChatConversationService {
                     break;
                 case 'awaiting_dni_confirmation':
                     responseMessage = await this.handleDniConfirmationState(phoneNumber, messageBody);
+                    break;
+                case 'awaiting_web_registration':
+                    responseMessage = await this.handleWebRegistrationState(messageBody);
+                    break;
+                case 'awaiting_web_auth':
+                    responseMessage = await this.handleWebAuthState(messageBody);
                     break;
                 case 'service_selection':
                     responseMessage = await this.handleServiceSelection(phoneNumber, messageBody);
@@ -147,9 +178,9 @@ Responde:
 *2* No, ingresar otro DNI`;
         }
 
-    if (/^\d{8}$/.test(possibleDni)) {
-        return this.handleDniState(phoneNumber, possibleDni);
-    }
+        if (/^\d{8}$/.test(possibleDni)) {
+            return this.handleDniState(phoneNumber, possibleDni);
+        }
 
         await ConversationService.updateConversationState(phoneNumber, 'awaiting_dni');
         return `👋 ¡Hola! Bienvenido a *ESIAD Proyectos SAC*.
@@ -164,22 +195,24 @@ Antes de continuar, envíame tu *DNI (8 dígitos)* para registrar tu pedido.`;
             return '❌ DNI inválido. Por favor, envía un DNI de 8 dígitos (solo números).';
         }
 
-        await CustomerService.upsertByDni({ dni, phoneNumber });
-        await ConversationService.updateConversationState(phoneNumber, 'service_selection', null, {
-            customer_dni: dni
-        });
-
-        return `✅ DNI ${dni} registrado correctamente.
-
-${this.buildServiceMenuMessage()}`;
+        const customer = await CustomerService.upsertByDni({ dni, phoneNumber });
+        return this.buildAccessStepMessage(phoneNumber, dni, customer);
     }
 
     async handleDniConfirmationState(phoneNumber, messageBody) {
         const normalized = (messageBody || '').toLowerCase().trim();
 
         if (normalized === '1' || normalized === 'si' || normalized === 'sí') {
-            await ConversationService.updateConversationState(phoneNumber, 'service_selection');
-            return this.buildServiceMenuMessage();
+            const conversation = await ConversationService.getOrCreateConversation(phoneNumber);
+            const dni = conversation.customer_dni;
+
+            if (!dni) {
+                await ConversationService.updateConversationState(phoneNumber, 'awaiting_dni');
+                return 'No encontré un DNI asociado. Envíame tu DNI (8 dígitos) para continuar.';
+            }
+
+            const customer = await CustomerService.getByDni(dni);
+            return this.buildAccessStepMessage(phoneNumber, dni, customer);
         }
 
         if (normalized === '2' || normalized.includes('no')) {
@@ -190,6 +223,77 @@ ${this.buildServiceMenuMessage()}`;
         }
 
         return 'Responde *1* para usar el DNI registrado o *2* para ingresar otro DNI.';
+    }
+
+    async buildAccessStepMessage(phoneNumber, dni, customer) {
+        const publicBase = this.getPublicBaseUrl();
+        const accessToken = this.generateUniqueToken(phoneNumber, 'customer_access');
+        const expiresAt = this.buildTokenExpiryDate();
+        const ttlMinutes = this.getTokenTtlMinutes();
+
+        await ConversationService.updateConversationState(
+            phoneNumber,
+            customer?.name ? 'awaiting_web_auth' : 'awaiting_web_registration',
+            'corte_laser',
+            {
+                customer_dni: dni,
+                web_token: accessToken,
+                web_token_expires_at: expiresAt,
+                web_form_url: `${publicBase}/pedido/corte-laser?token=${accessToken}`
+            }
+        );
+
+        if (customer?.name) {
+            return `✅ DNI ${dni} validado.
+
+Hola ${customer.name}, para continuar con tu pedido ingresa aquí:
+
+${publicBase}/cliente/autenticacion?token=${accessToken}
+
+Este enlace vence en ${ttlMinutes} minutos.
+
+Cuando termines, se abrirá el formulario del pedido.`;
+        }
+
+        return `✅ DNI ${dni} validado.
+
+Es tu primera vez. Regístrate aquí para continuar:
+
+${publicBase}/cliente/registro?token=${accessToken}
+
+Este enlace vence en ${ttlMinutes} minutos.
+
+Al finalizar, se abrirá automáticamente el formulario del pedido.`;
+    }
+
+    handleWebRegistrationState(messageBody) {
+        const lowerBody = (messageBody || '').toLowerCase();
+
+        if (lowerBody.includes('ya') || lowerBody.includes('listo') || lowerBody.includes('ok')) {
+            return 'Perfecto. Si ya te registraste, vuelve al enlace que te envié y continúa con tu pedido.';
+        }
+
+        return 'Para continuar de forma segura, completa primero tu registro en el enlace que te envié.';
+    }
+
+    handleWebAuthState(messageBody) {
+        const lowerBody = (messageBody || '').toLowerCase();
+
+        if (lowerBody.includes('ya') || lowerBody.includes('listo') || lowerBody.includes('ok')) {
+            return 'Perfecto. Si ya te autenticaste, se abrirá el formulario para completar tu pedido.';
+        }
+
+        return 'Para continuar, usa el enlace de autenticación que te envié.';
+    }
+
+    getPublicBaseUrl() {
+        const webhookUrl = process.env.WEBHOOK_URL || '';
+
+        if (webhookUrl.includes('/webhook/whatsapp')) {
+            return webhookUrl.replace('/webhook/whatsapp', '');
+        }
+
+        return `http://localhost:${process.env.PORT || 3000}`;
     }
 
     buildServiceMenuMessage() {
@@ -218,28 +322,35 @@ _(Por favor, responde con el número de la opción que deseas.)_`;
         if (selectedService) {
             if (selectedService === 'corte_laser') {
                 const existingConversation = await ConversationService.getOrCreateConversation(phoneNumber);
-                let token, webFormUrl;
+                let token, webFormUrl, expiresAt;
 
-                if (existingConversation.web_token) {
+                if (existingConversation.web_token && !this.isTokenExpired(existingConversation.web_token_expires_at)) {
                     token = existingConversation.web_token;
                     webFormUrl = existingConversation.web_form_url || `${process.env.WEBHOOK_URL.replace('/webhook/whatsapp', '')}/pedido/corte-laser?token=${token}`;
+                    expiresAt = existingConversation.web_token_expires_at;
                     console.log(`🔄 Usando token existente: ${token}`);
                 } else {
                     token = this.generateUniqueToken(phoneNumber, selectedService);
                     webFormUrl = `${process.env.WEBHOOK_URL.replace('/webhook/whatsapp', '')}/pedido/corte-laser?token=${token}`;
+                    expiresAt = this.buildTokenExpiryDate();
                     console.log(`🆕 Generando nuevo token: ${token}`);
 
                     await ConversationService.updateConversationState(phoneNumber, 'awaiting_web_upload', selectedService, {
                         web_token: token,
+                        web_token_expires_at: expiresAt,
                         web_form_url: webFormUrl
                     });
                 }
+
+                const ttlMinutes = this.getTokenTtlMinutes();
 
                 return `🔥 *¡Perfecto! Seleccionaste Corte Láser*
 
 Para enviar tu archivo DWG:
 
 ${webFormUrl}
+
+⏱️ _Este enlace es temporal y vence en ${ttlMinutes} minutos._
 
 _(Haz clic en el enlace para subir tu archivo)_`;
             } else {

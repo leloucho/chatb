@@ -51,6 +51,12 @@ class ConversationService {
                 paramIndex++;
             }
 
+            if (Object.prototype.hasOwnProperty.call(additionalData, 'web_token_expires_at')) {
+                updates.push(`web_token_expires_at = $${paramIndex}`);
+                params.push(additionalData.web_token_expires_at);
+                paramIndex++;
+            }
+
             if (additionalData.web_form_url) {
                 updates.push(`web_form_url = $${paramIndex}`);
                 params.push(additionalData.web_form_url);
@@ -81,6 +87,11 @@ class ConversationService {
 
     // Obtener conversación por token
     static async getConversationByToken(token) {
+        const tokenStatus = await this.getConversationByTokenStatus(token);
+        return tokenStatus.conversation;
+    }
+
+    static async getConversationByTokenStatus(token) {
         const client = await pool.connect();
         
         try {
@@ -88,7 +99,30 @@ class ConversationService {
                 'SELECT * FROM conversations WHERE web_token = $1',
                 [token]
             );
-            return result.rows[0] || null;
+
+            if (result.rows.length === 0) {
+                return {
+                    conversation: null,
+                    reason: 'not_found'
+                };
+            }
+
+            const conversation = result.rows[0];
+
+            if (conversation.web_token_expires_at) {
+                const expiresAt = new Date(conversation.web_token_expires_at);
+                if (Number.isFinite(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+                    return {
+                        conversation: null,
+                        reason: 'expired'
+                    };
+                }
+            }
+
+            return {
+                conversation,
+                reason: null
+            };
         } finally {
             client.release();
         }
@@ -100,7 +134,7 @@ class ConversationService {
         
         try {
             const result = await client.query(
-                'UPDATE conversations SET current_state = $1, selected_service = NULL, web_token = NULL, web_form_url = NULL, details = NULL, updated_at = CURRENT_TIMESTAMP WHERE phone_number = $2',
+                'UPDATE conversations SET current_state = $1, selected_service = NULL, web_token = NULL, web_token_expires_at = NULL, web_form_url = NULL, details = NULL, updated_at = CURRENT_TIMESTAMP WHERE phone_number = $2',
                 ['initial', phoneNumber]
             );
             return result.rowCount > 0;

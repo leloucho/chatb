@@ -293,6 +293,25 @@
             </div>
 
             <form id="uploadForm">
+                <div class="section">
+                    <h3>👤 Datos del Cliente y Pedido</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customerName">Nombre del Cliente *</label>
+                            <input type="text" id="customerName" name="customerName" placeholder="Ej: Juan Perez" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="customerDni">DNI</label>
+                            <input type="text" id="customerDni" name="customerDni" readonly>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serviceName">Pedido a Realizar</label>
+                        <input type="text" id="serviceName" name="serviceName" readonly value="Corte Láser">
+                    </div>
+                </div>
+
                 <!-- Upload de Archivos -->
                 <div class="section">
                     <h3>📁 Subir Archivos de Diseño</h3>
@@ -390,6 +409,31 @@
             document.getElementById('errorMessage').style.display = 'block';
             document.getElementById('errorText').textContent = 'Token inválido. Por favor solicita un nuevo enlace desde WhatsApp.';
             document.getElementById('uploadForm').style.display = 'none';
+        }
+
+        async function loadFormContext() {
+            if (!token) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/web/form-context?token=${encodeURIComponent(token)}`);
+                const payload = await response.json();
+
+                if (!response.ok || !payload.success) {
+                    throw new Error(payload.message || 'No se pudo cargar el contexto del pedido');
+                }
+
+                const data = payload.data || {};
+                document.getElementById('customerDni').value = data.customerDni || '';
+                document.getElementById('serviceName').value = data.serviceName || 'Corte Láser';
+
+                if (data.customerName) {
+                    document.getElementById('customerName').value = data.customerName;
+                }
+            } catch (error) {
+                console.error('Error cargando contexto del formulario:', error);
+            }
         }
 
         // Configurar drag & drop
@@ -524,6 +568,13 @@
             const espesor = document.getElementById('espesor').value.trim();
             const dimensiones = document.getElementById('dimensiones').value.trim();
             const cantidad = document.getElementById('cantidad').value.trim();
+            const customerName = document.getElementById('customerName').value.trim();
+
+            if (!customerName || customerName.length < 2) {
+                showError('Por favor ingresa tu nombre completo.');
+                document.getElementById('customerName').focus();
+                return;
+            }
 
             if (!material) {
                 showError('Por favor especifica el material.');
@@ -551,6 +602,7 @@
 
             const formData = new FormData();
             formData.append('token', token);
+            formData.append('customerName', customerName);
             
             // Añadir archivos
             selectedFiles.forEach(file => {
@@ -598,6 +650,7 @@
         });
 
         // Validación inicial
+        loadFormContext();
         updateSubmitButton();
     </script>
 </body>

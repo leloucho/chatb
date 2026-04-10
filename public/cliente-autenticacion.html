@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autenticación de Cliente - ESIAD</title>
+    <style>
+        :root {
+            --bg: #f5f8fb;
+            --card: #ffffff;
+            --ink: #1d2b3f;
+            --muted: #5f7087;
+            --brand: #1453a6;
+            --brand-dark: #103f7d;
+            --line: #dce5f1;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            background: linear-gradient(160deg, #e9f1ff 0%, #f7fbff 55%, #eef8ff 100%);
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            color: var(--ink);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 520px;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: 0 16px 30px rgba(12, 38, 76, 0.12);
+            overflow: hidden;
+        }
+
+        .head {
+            padding: 24px;
+            background: linear-gradient(120deg, var(--brand), #2a77de);
+            color: #fff;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 1.48rem;
+        }
+
+        .head p {
+            margin: 0;
+            opacity: 0.92;
+        }
+
+        .body {
+            padding: 24px;
+        }
+
+        .item {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f9fbff;
+        }
+
+        .label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--muted);
+        }
+
+        .value {
+            margin-top: 4px;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            background: linear-gradient(120deg, #1453a6, #2a77de);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .msg {
+            display: none;
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .msg.error {
+            background: #ffecec;
+            color: #9d3131;
+        }
+
+        .msg.ok {
+            background: #e7f6ec;
+            color: #1e6b3a;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="head">
+            <h1>Confirmación de Cliente</h1>
+            <p>Valida tus datos para continuar con tu pedido.</p>
+        </div>
+
+        <div class="body">
+            <div class="item">
+                <div class="label">DNI</div>
+                <div id="dni" class="value">-</div>
+            </div>
+            <div class="item">
+                <div class="label">Nombre</div>
+                <div id="name" class="value">-</div>
+            </div>
+
+            <button id="continueBtn" class="btn">Continuar al formulario</button>
+            <div id="error" class="msg error"></div>
+            <div id="ok" class="msg ok"></div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+
+        const errorBox = document.getElementById('error');
+        const okBox = document.getElementById('ok');
+        const continueBtn = document.getElementById('continueBtn');
+
+        function showError(message) {
+            errorBox.textContent = message;
+            errorBox.style.display = 'block';
+            okBox.style.display = 'none';
+        }
+
+        function showOk(message) {
+            okBox.textContent = message;
+            okBox.style.display = 'block';
+            errorBox.style.display = 'none';
+        }
+
+        async function loadContext() {
+            if (!token) {
+                showError('Token inválido. Vuelve a WhatsApp y solicita un nuevo enlace.');
+                continueBtn.disabled = true;
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/web/customer-context?token=${encodeURIComponent(token)}`);
+                const payload = await res.json();
+
+                if (!res.ok || !payload.success) {
+                    throw new Error(payload.message || 'No se pudo validar el enlace');
+                }
+
+                const data = payload.data || {};
+                document.getElementById('dni').textContent = data.customerDni || '-';
+                document.getElementById('name').textContent = data.customerName || 'Cliente';
+            } catch (err) {
+                showError(err.message || 'Error cargando datos');
+                continueBtn.disabled = true;
+            }
+        }
+
+        continueBtn.addEventListener('click', async () => {
+            continueBtn.disabled = true;
+            continueBtn.textContent = 'Validando...';
+
+            try {
+                const res = await fetch('/api/web/customer-authenticate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+
+                const payload = await res.json();
+
+                if (!res.ok || !payload.success) {
+                    throw new Error(payload.message || 'No se pudo autenticar');
+                }
+
+                showOk('Autenticación correcta. Redirigiendo al formulario...');
+                setTimeout(() => {
+                    window.location.href = payload.nextUrl;
+                }, 1000);
+            } catch (err) {
+                showError(err.message || 'No se pudo autenticar');
+                continueBtn.disabled = false;
+                continueBtn.textContent = 'Continuar al formulario';
+            }
+        });
+
+        loadContext();
+    </script>
+</body>
+</html>

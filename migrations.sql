@@ -1,5 +1,6 @@
 -- Agregar nuevas columnas para soporte web
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS web_token VARCHAR(255);
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS web_token_expires_at TIMESTAMP;
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS web_form_url TEXT;
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS details TEXT; -- Para información adicional
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS customer_dni VARCHAR(8);

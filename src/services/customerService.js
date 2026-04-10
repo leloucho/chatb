@@ -1,6 +1,21 @@
 const { pool } = require('../database/database');
 
 class CustomerService {
+    static async getByDni(dni) {
+        const client = await pool.connect();
+
+        try {
+            const result = await client.query(
+                'SELECT * FROM customers WHERE dni = $1',
+                [dni]
+            );
+
+            return result.rows[0] || null;
+        } finally {
+            client.release();
+        }
+    }
+
     static async upsertByDni({ dni, phoneNumber, name = null }) {
         const client = await pool.connect();
 

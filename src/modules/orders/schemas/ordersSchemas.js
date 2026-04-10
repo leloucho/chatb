@@ -7,7 +7,8 @@ const idParam = z.object({
 const uploadFilesSchema = z.object({
     body: z.object({
         token: z.string().min(1),
-        specifications: z.string().min(2)
+        specifications: z.string().min(2),
+        customerName: z.string().trim().min(2).max(100).optional()
     }),
     params: z.object({}),
     query: z.object({})

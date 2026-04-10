@@ -1,10 +1,11 @@
 const ConversationService = require('../../../services/conversationService');
 const OrderService = require('../../../services/orderService');
+const CustomerService = require('../../../services/customerService');
 const chatGateway = require('../../chat/services/chatGateway');
 const ordersRepository = require('../repositories/ordersRepository');
 
 async function processUploadFiles(body, files) {
-    const { token, specifications } = body;
+    const { token, specifications, customerName } = body;
 
     if (!token) {
         const err = new Error('Token requerido');
@@ -19,11 +20,14 @@ async function processUploadFiles(body, files) {
     }
 
     // Buscar conversación por token
-    const conversation = await ConversationService.getConversationByToken(token);
+    const tokenStatus = await ConversationService.getConversationByTokenStatus(token);
+    const conversation = tokenStatus.conversation;
 
     if (!conversation) {
-        const err = new Error('Token inválido o expirado');
-        err.statusCode = 404;
+        const err = new Error(tokenStatus.reason === 'expired'
+            ? 'Token expirado. Solicita un nuevo enlace desde WhatsApp.'
+            : 'Token inválido o expirado');
+        err.statusCode = tokenStatus.reason === 'expired' ? 410 : 404;
         throw err;
     }
 
@@ -31,10 +35,19 @@ async function processUploadFiles(body, files) {
     const fileNames = files.map(file => file.filename);
     const specsObj = JSON.parse(specifications);
 
+    if (conversation.customer_dni && customerName && customerName.trim().length > 1) {
+        await CustomerService.upsertByDni({
+            dni: conversation.customer_dni,
+            phoneNumber: conversation.phone_number,
+            name: customerName.trim()
+        });
+    }
+
     // Crear pedido con archivos
     const order = await OrderService.createOrderWithFiles({
         phoneNumber: conversation.phone_number,
         customerDni: conversation.customer_dni || null,
+        customerName: customerName ? customerName.trim() : '',
         serviceType: 'corte_laser',
         serviceName: 'Corte Láser',
         files: fileNames,

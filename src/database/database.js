@@ -39,6 +39,7 @@ const initDatabase = async () => {
                 selected_service VARCHAR(50),
                 customer_dni VARCHAR(8),
                 web_token VARCHAR(255),
+                web_token_expires_at TIMESTAMP,
                 web_form_url TEXT,
                 details TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -86,6 +87,7 @@ const initDatabase = async () => {
 
         // Migraciones idempotentes para bases ya existentes
         await client.query('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS customer_dni VARCHAR(8)');
+        await client.query('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS web_token_expires_at TIMESTAMP');
         await client.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_dni VARCHAR(8)');
         await client.query('ALTER TABLE customers ADD COLUMN IF NOT EXISTS name VARCHAR(100)');
         await client.query('ALTER TABLE customers ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
