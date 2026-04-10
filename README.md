@@ -106,6 +106,54 @@ npm run dev
 npm start
 ```
 
+## 🧪 Testing Manual
+
+### Cargar Datos de Prueba
+
+```bash
+# Opción 1: Script Node.js (recomendado)
+node load_test_data.js
+
+# Opción 2: SQL directo (ver test_data.sql)
+psql -U usuario -d pedidos -f test_data.sql
+```
+
+### Ejecutar Test Cases
+
+Ver documentación completa en: [TESTING_MANUAL.md](./TESTING_MANUAL.md)
+
+**Test Cases Disponibles:**
+- ✅ TC1: Primera Vez (Usuario nuevo → Registro)
+- ✅ TC2: Recurrente (Usuario registrado → Autenticación)
+- ✅ TC3: Token Inválido (Error 404)
+- ✅ TC4: Token Expirado (Error 410)
+- ✅ TC5: Upload Exitoso (Pedido creado)
+- ✅ TC6: Upload con Error (Validación cliente)
+- ✅ TC7: Upload con Error (Servidor 500)
+- ✅ TC8: Flujo Completo ChatBot → Web
+
+**URLs para Testing:**
+```
+http://localhost:4200/pedido/acceso?token=valid-token-tc1-first-time (Primera vez)
+http://localhost:4200/pedido/acceso?token=valid-token-tc2-recurrent (Recurrente)
+http://localhost:4200/pedido/acceso?token=inexistente (Token inválido → 404)
+http://localhost:4200/pedido/acceso?token=expired-token-tc4 (Token expirado → 410)
+```
+
+### Verificar Endpoints
+
+Ver: [ENDPOINTS_VERIFICATION.md](./ENDPOINTS_VERIFICATION.md)
+
+```bash
+# Verificar token válido (primera vez)
+curl "http://localhost:3000/api/web/customer-context?token=valid-token-tc1-first-time"
+
+# Verificar token expirado
+curl -v "http://localhost:3000/api/web/customer-context?token=expired-token-tc4"
+```
+
+---
+
 ## 📱 Configuración de WhatsApp Business
 
 ### En Twilio Console:
