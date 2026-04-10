@@ -77,7 +77,7 @@ RETURNING *;
 
 6. **Validaciones post-submit:**
    - ✅ Spinner/loading state visible
-   - ✅ POST a `/api/web/customer-register` con body:
+   - ✅ POST a `/api/web/customer-register` (endpoint real: `http://localhost:3000/api/web/customer-register`) con body:
      ```json
      {
        "token": "valid-token-tc1-first-time",
@@ -137,7 +137,7 @@ RETURNING *;
 4. Click en "Continuar"
 
 5. **Validaciones post-submit:**
-   - ✅ POST a `/api/web/customer-authenticate` con body:
+   - ✅ POST a `/api/web/customer-authenticate` (endpoint real: `http://localhost:3000/api/web/customer-authenticate`) con body:
      ```json
      {
        "token": "valid-token-tc2-recurrent",
@@ -281,23 +281,18 @@ SELECT * FROM orders WHERE customer_dni = '12345678' ORDER BY created_at DESC LI
 **Pasos:**
 1. Entrar a `/pedido/corte-laser?token=valid-token-tc1-first-time`
 
-2. **Escenario A: Archivo muy grande (simular o si hay validación tamaño)**
-   - Upload archivo > 50MB
-   - ✅ Error local: `Archivo demasiado grande. Máximo 50MB.`
-   - ✅ Form no se envía a servidor
-   - ✅ Input file sigue disponible para reintentar
-
-3. **Escenario B: Formato archivo inválido**
-   - Upload `.txt` o `.jpg` (no `.dwg`)
-   - ✅ Error: `Solo se aceptan archivos .dwg`
-   - ✅ Form no se envía
-
-4. **Escenario C: Especificaciones vacías (validación requerida)**
+2. **Escenario A: Especificaciones vacías (validación requerida)**
    - Dejar vacíos: especificaciones
    - Click enviar
    - ✅ Error: `Las especificaciones son requeridas`
    - ✅ Form no se envía
    - ✅ Campo resaltado en rojo
+
+3. **Escenario B: Archivo no enviado**
+   - Llenar especificaciones pero no seleccionar archivo
+   - Click enviar
+   - ✅ Error: `Se requiere al menos un archivo`
+   - ✅ Form no se envía
 
 ---
 
@@ -314,15 +309,16 @@ SELECT * FROM orders WHERE customer_dni = '12345678' ORDER BY created_at DESC LI
 
 3. **Validaciones esperadas:**
    - ✅ Modal/snackbar de error: `Error al procesar pedido. Intenta nuevamente.`
+   - Parar el servidor backend (Ctrl+C en terminal)
+   - Intentar submit del formulario
+
+3. **Validaciones esperadas:**
+   - ✅ Modal/snackbar de error: `Error al procesar pedido. Intenta nuevamente.`
    - ✅ Botón "Reintentar" visible
    - ✅ **No** se borra el formulario
    - ✅ Campos mantienen valores (no se resetean)
-   - ✅ Se puede editar y reintentear sin recargar página
-
----
-
-### TC8: Flujo Completo del Chatbot (WhatsApp + Web)
-
+   - ✅ Se puede editar y reintentar sin recargar página
+   - ✅ Una vez que backend vuelve online, `Reintentar` funcio
 **Objetivo:** Integración end-to-end chatbot → web.
 
 **Pasos (require Twilio Sandbox activo):**
@@ -467,9 +463,9 @@ curl -v "http://localhost:3000/api/web/customer-context?token=expired-token-tc4"
 | TC1 Primera Vez | /pedido/acceso?token=... | GET | 200 | - | Muestra REGISTRO, DNI readonly, Nombre editable |
 | TC2 Recurrente | /pedido/acceso?token=... | GET | 200 | - | Muestra AUTH, ambos readonly |
 | TC3 Token Inválido | /api/web/customer-context | GET | 404 | 404 | Mensaje "Enlace inválido" |
-| TC4 Token Expirado | /api/web/customer-context | GET | 410 | 410 | Mensaje "Tu enlace expiró" |
-| TC5 Upload OK | /api/orders/upload-files | POST | 200 | - | `{success: true, orderId: ...}` |
-| TC6 Upload Error | /pedido/corte-laser | Form | 200 | - | Error message visible, UI intacta |
+| TC4 Token Expirado | upload-files | POST | 200 | - | `{success: true, orderId: ...}` |
+| TC6 Upload Error | /api/upload-files | POST | 400 | - | Error message visible, UI intacta |
+| TC7 Backend Error | /apie-laser | Form | 200 | - | Error message visible, UI intacta |
 | TC7 Backend Error | /api/orders/upload-files | POST | 500 | - | Modal de error, botón reintentar |
 | TC8 WhatsApp Flow | /webhook/whatsapp | POST | 200 | - | Link generado, token válido en BD |
 

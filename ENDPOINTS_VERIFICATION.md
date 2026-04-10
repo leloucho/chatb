@@ -86,7 +86,7 @@ POST /api/web/customer-authenticate
 ### 4️⃣ Order Upload Endpoint
 
 ```bash
-POST /api/orders/upload-files
+POST /api/upload-files
 ```
 **Request (FormData):**
 ```
@@ -165,12 +165,12 @@ curl -v "http://localhost:3000/api/web/customer-context?token=expired-token-tc4"
 
 **TC5 - Upload Exitoso:**
 ```bash
-curl -X POST "http://localhost:3000/api/orders/upload-files" \
+curl -X POST "http://localhost:3000/api/upload-files" \
   -F "token=valid-token-tc1-first-time" \
   -F "serviceType=corte_laser" \
   -F "specifications=Test" \
   -F "quantity=1" \
-  -F "file=@test_design.dwg"
+  -F "files=@test_design.dwg"
 # Esperado: 200 con orderId
 ```
 
